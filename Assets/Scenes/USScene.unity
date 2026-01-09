@@ -896,7 +896,7 @@ MonoBehaviour:
       m_Calls: []
   m_SerializedLibrary: {fileID: 11400000, guid: fbc83f916b1c4694ebeacfe8157f5986, type: 2}
   m_MaxNumberOfMovingImages: 1
-  m_TrackedImagePrefab: {fileID: 9201028775744902044, guid: c55b8c1d31f881f4386465effbbe2ddd, type: 3}
+  m_TrackedImagePrefab: {fileID: 5352245808574936813, guid: a9b19900d3b5d224ea4e448f08e6bc89, type: 3}
 --- !u!114 &2512387470422636671
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -914,16 +914,18 @@ MonoBehaviour:
   - {fileID: 593215616}
   - {fileID: 593215615}
   puzzleAssetDeck:
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
+  - {fileID: 21300000, guid: 8aa97b3017c8801498a9c437d64b37f7, type: 3}
+  - {fileID: 21300000, guid: ac2422a4a78621243be21f5422279fac, type: 3}
+  - {fileID: 21300000, guid: b8708d24032b13f4f8e93fbdc3058d21, type: 3}
+  - {fileID: 21300000, guid: 7bc4e5834913e4948b66af0018c84568, type: 3}
+  - {fileID: 21300000, guid: 3a016a2dc8c76db448de648e000f4f40, type: 3}
+  - {fileID: 21300000, guid: 823131f25b9027e41bac065934a2e38a, type: 3}
+  - {fileID: 21300000, guid: a6ed59fb704671f4c86702ad9c930e86, type: 3}
+  - {fileID: 21300000, guid: d790269e50e9acb49aeeb3166d76b2ab, type: 3}
+  - {fileID: 21300000, guid: ab49930bca927084aaf50c95390e4484, type: 3}
+  - {fileID: 21300000, guid: c7826d60cc4a33c4f9d107e1f81b6430, type: 3}
+  - {fileID: 21300000, guid: 170b1846962f13243a36315f23cececf, type: 3}
+  - {fileID: 21300000, guid: 4bfa78c127462d54c9236769fd03dda2, type: 3}
   distanceFromCamera: 0.5
   mapLayerMask:
     serializedVersion: 2
