@@ -37,18 +37,21 @@ public class PieceSlot : MonoBehaviour
         }
     }
 
-    public void CheckMap(string incomingPieceID)
+    public bool CheckMap(string incomingPieceID)
     {
-        if (isSolved) return;
+        // If it's already solved, we reject any new attempts
+        if (isSolved) return false;
 
         // Compare the cleaned IDs
         if (incomingPieceID == stateID)
         {
             HandleSuccess();
+            return true; // <--- Return SUCCESS
         }
         else
         {
             HandleFailure();
+            return false; // <--- Return FAILURE
         }
     }
 
