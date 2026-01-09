@@ -5,41 +5,41 @@ using UnityEngine.EventSystems;
 
 public class ARPuzzleController : MonoBehaviour
 {
-    [Header("UI Setup")]
-    [Tooltip("Drag your 3 fixed UI Images here")]
-    public List<Image> uiSlots;
+    [Header("UI Slots (Must be RAW IMAGE)")]
+    public List<RawImage> uiSlots;
 
-    [Header("Puzzle Data")]
-    [Tooltip("Drag all your map sprites here. The Sprite Name MUST match the Map ID.")]
-    public List<Sprite> puzzleAssetDeck;
+    [Header("Data (Drag your 3D Prefabs here)")]
+    [Tooltip("The Prefab Name will be the ID. The Prefab visual will be the UI Icon.")]
+    public List<GameObject> prefabDeck;
 
     [Header("AR Configuration")]
     public float distanceFromCamera = 0.4f;
     public LayerMask mapLayerMask;
-    public GameObject floatingCursorPrefab;
 
-    // --- Runtime State ---
-    // Tracks which sprite (if any) is currently assigned to each slot index
-    private Sprite[] _slotContents;
-    private int _currentDraggingSlotIndex = -1; // -1 means nothing is being dragged
+    // --- Internal State ---
+    private GameObject[] _slotContents; // Stores the prefab reference for each slot
+    private int _currentDraggingSlotIndex = -1;
     private GameObject _currentFloatingObject;
     private Camera _arCamera;
     private bool _isDragging = false;
 
+    // --- Snapshot Settings ---
+    private int snapshotSize = 256;
+    private Vector3 snapshotPos = new Vector3(0, -500, 0); // Far away from AR scene
+
     void Start()
     {
         _arCamera = Camera.main;
-        _slotContents = new Sprite[uiSlots.Count];
+        _slotContents = new GameObject[uiSlots.Count];
 
-        // 1. Initial Setup: Bind listeners to the UI Slots
+        // 1. Setup Input Listeners
         for (int i = 0; i < uiSlots.Count; i++)
         {
-            // Capture the index 'i' for the lambda closure
             int index = i;
             AddEventTrigger(uiSlots[i], index);
         }
 
-        // 2. Fill the slots with the first available assets
+        // 2. Fill Slots
         FillSlots();
     }
 
@@ -51,84 +51,143 @@ public class ARPuzzleController : MonoBehaviour
         }
     }
 
-    // --- INVENTORY MANAGEMENT ---
+    // --- 1. INVENTORY SYSTEM ---
 
     private void FillSlots()
     {
-        // Simple logic: Fill empty slots with the next available assets from the deck
         for (int i = 0; i < uiSlots.Count; i++)
         {
-            // If slot is empty and we have assets left
-            if (_slotContents[i] == null && puzzleAssetDeck.Count > 0)
+            // If slot is empty and we have prefabs left in the deck
+            if (_slotContents[i] == null && prefabDeck.Count > 0)
             {
-                // Pop the first asset from the deck
-                Sprite nextPiece = puzzleAssetDeck[0];
-                puzzleAssetDeck.RemoveAt(0);
+                // Pull next prefab
+                GameObject nextPrefab = prefabDeck[0];
+                prefabDeck.RemoveAt(0);
 
-                // Assign to logic and UI
-                _slotContents[i] = nextPiece;
-                uiSlots[i].sprite = nextPiece;
-                uiSlots[i].enabled = true; // Turn the UI ON
-                uiSlots[i].preserveAspect = true; // Optional: Keep aspect ratio
+                // Assign Logic
+                _slotContents[i] = nextPrefab;
+
+                // GENERATE UI ICON AUTOMATICALLY
+                Texture2D preview = GenerateRuntimePreview(nextPrefab);
+                uiSlots[i].texture = preview;
+                uiSlots[i].enabled = true;
+
+                // Optional: Fix Aspect Ratio? RawImage works differently, 
+                // but usually square snapshots look best.
             }
             else if (_slotContents[i] == null)
             {
-                // No assets left for this slot
-                uiSlots[i].enabled = false; // Turn the UI OFF
+                uiSlots[i].enabled = false;
             }
         }
     }
 
-    // --- INPUT BINDING ---
-
-    private void AddEventTrigger(Image slotImage, int slotIndex)
+    // --- 2. RUNTIME SNAPSHOT GENERATOR ---
+    // This function creates a mini studio, takes a photo of the prefab, and returns the texture.
+    private Texture2D GenerateRuntimePreview(GameObject prefab)
     {
-        // Ensure the slot handles raycasts
+        // A. Setup "Studio"
+        GameObject studioRoot = new GameObject("PreviewStudio");
+        studioRoot.transform.position = snapshotPos;
+
+        // B. Spawn Object
+        GameObject subject = Instantiate(prefab, studioRoot.transform);
+        subject.transform.localPosition = Vector3.zero;
+        subject.transform.localRotation = Quaternion.identity; // Adjust if your prefabs are rotated
+
+        // Ensure subject is on a layer the camera can see (Default is usually fine)
+        // Strip Colliders so they don't mess with raycasts during the split second they exist
+        foreach (var c in subject.GetComponentsInChildren<Collider>()) c.enabled = false;
+
+        // C. Setup Camera
+        GameObject camObj = new GameObject("PreviewCamera");
+        camObj.transform.parent = studioRoot.transform;
+        Camera snapCam = camObj.AddComponent<Camera>();
+        snapCam.clearFlags = CameraClearFlags.Color;
+        snapCam.backgroundColor = new Color(0, 0, 0, 0); // Transparent background
+        snapCam.cullingMask = ~0; // Render everything (in this isolated spot)
+
+        // D. Setup Lighting (Crucial for 3D models)
+        GameObject lightObj = new GameObject("PreviewLight");
+        lightObj.transform.parent = studioRoot.transform;
+        Light light = lightObj.AddComponent<Light>();
+        light.type = LightType.Directional;
+        light.intensity = 1.0f;
+        lightObj.transform.rotation = Quaternion.Euler(50, -30, 0);
+
+        // E. Auto-Fit Camera to Object Bounds
+        Bounds bounds = new Bounds(subject.transform.position, Vector3.zero);
+        foreach (Renderer r in subject.GetComponentsInChildren<Renderer>())
+            bounds.Encapsulate(r.bounds);
+
+        float maxDim = Mathf.Max(bounds.size.x, bounds.size.y, bounds.size.z);
+        float dist = maxDim / (2.0f * Mathf.Tan(0.5f * snapCam.fieldOfView * Mathf.Deg2Rad));
+
+        // Position camera looking at center of bounds
+        snapCam.transform.position = bounds.center + new Vector3(0, 0, -dist * 1.5f); // 1.5x buffer
+        snapCam.transform.LookAt(bounds.center);
+
+        // F. Render
+        RenderTexture rt = RenderTexture.GetTemporary(snapshotSize, snapshotSize, 16);
+        snapCam.targetTexture = rt;
+        snapCam.Render();
+
+        // G. Save to Texture2D
+        RenderTexture.active = rt;
+        Texture2D result = new Texture2D(snapshotSize, snapshotSize, TextureFormat.RGBA32, false);
+        result.ReadPixels(new Rect(0, 0, snapshotSize, snapshotSize), 0, 0);
+        result.Apply();
+
+        // H. Cleanup
+        RenderTexture.active = null;
+        snapCam.targetTexture = null;
+        RenderTexture.ReleaseTemporary(rt);
+        Destroy(studioRoot); // Destroys camera, light, and subject
+
+        return result;
+    }
+
+    // --- 3. INTERACTION LOGIC (Drag & Drop) ---
+
+    private void AddEventTrigger(RawImage slotImage, int slotIndex)
+    {
         EventTrigger trigger = slotImage.gameObject.GetComponent<EventTrigger>();
         if (trigger == null) trigger = slotImage.gameObject.AddComponent<EventTrigger>();
 
         EventTrigger.Entry entry = new EventTrigger.Entry();
         entry.eventID = EventTriggerType.PointerDown;
-
-        // When touched, call OnSlotTouched with the specific index
         entry.callback.AddListener((data) => { OnSlotTouched(slotIndex); });
-
         trigger.triggers.Add(entry);
     }
-
-    // --- INTERACTION LOGIC ---
 
     public void OnSlotTouched(int slotIndex)
     {
         if (_isDragging) return;
-        if (_slotContents[slotIndex] == null) return; // Ignore empty slots
+        if (_slotContents[slotIndex] == null) return;
 
         _isDragging = true;
         _currentDraggingSlotIndex = slotIndex;
+        GameObject prefabRef = _slotContents[slotIndex];
 
-        // 1. Visually "Pick up" the item
-        uiSlots[slotIndex].enabled = false; // Turn UI OFF (Hide it)
+        // Hide UI
+        uiSlots[slotIndex].enabled = false;
 
-        // 2. Spawn the 3D representation
+        // Spawn Floating Object
         Vector3 spawnPos = GetWorldPositionFromInput();
-        _currentFloatingObject = Instantiate(floatingCursorPrefab, spawnPos, Quaternion.identity);
+        _currentFloatingObject = Instantiate(prefabRef, spawnPos, Quaternion.identity); // Use Prefab directly!
 
-        // 3. Apply the texture from the sprite we are holding
-        Renderer rend = _currentFloatingObject.GetComponent<Renderer>();
-        if (rend != null)
-        {
-            rend.material.mainTexture = _slotContents[slotIndex].texture;
-        }
+        // Strip Colliders from the cursor so rays pass through
+        foreach (var c in _currentFloatingObject.GetComponentsInChildren<Collider>()) c.enabled = false;
+
+        // Optional: Rotate to face camera?
+        // _currentFloatingObject.transform.LookAt(_arCamera.transform);
     }
 
     private void HandleDragging()
     {
-        // Move floating object
         Vector3 targetPos = GetWorldPositionFromInput();
         _currentFloatingObject.transform.position = Vector3.Lerp(_currentFloatingObject.transform.position, targetPos, Time.deltaTime * 15f);
-        _currentFloatingObject.transform.LookAt(_arCamera.transform);
 
-        // Detect Release
         if ((Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Ended) || Input.GetMouseButtonUp(0))
         {
             DropPiece();
@@ -143,12 +202,12 @@ public class ARPuzzleController : MonoBehaviour
 
         if (_currentDraggingSlotIndex != -1 && _slotContents[_currentDraggingSlotIndex] != null)
         {
-            heldID = _slotContents[_currentDraggingSlotIndex].name; // ID comes from Sprite Name
+            // ID IS THE PREFAB NAME
+            heldID = _slotContents[_currentDraggingSlotIndex].name;
         }
 
         if (_currentFloatingObject != null)
         {
-            // Raycast Logic
             Vector3 rayDir = (_currentFloatingObject.transform.position - _arCamera.transform.position).normalized;
             Ray aimRay = new Ray(_arCamera.transform.position, rayDir);
 
@@ -157,30 +216,22 @@ public class ARPuzzleController : MonoBehaviour
                 PieceSlot slot = hit.collider.GetComponent<PieceSlot>();
                 if (slot != null)
                 {
-                    // Check logic
                     success = slot.CheckMap(heldID);
                 }
             }
-
             Destroy(_currentFloatingObject);
         }
-
-        // --- OUTCOME HANDLING ---
 
         if (success)
         {
             Debug.Log("Success!");
-            // 1. Clear the data for this slot (it is used up)
             _slotContents[_currentDraggingSlotIndex] = null;
-
-            // 2. (Optional) Immediately try to refill this empty slot from the deck
-            FillSlots();
+            FillSlots(); // Auto-refill from deck
         }
         else
         {
-            Debug.Log("Failed. Returning to inventory.");
-            // Return the item to the UI (Turn UI ON)
-            uiSlots[_currentDraggingSlotIndex].enabled = true;
+            Debug.Log("Failed.");
+            uiSlots[_currentDraggingSlotIndex].enabled = true; // Show UI again
         }
 
         _currentDraggingSlotIndex = -1;
