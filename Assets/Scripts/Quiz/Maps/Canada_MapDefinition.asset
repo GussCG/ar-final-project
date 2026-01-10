@@ -1,0 +1,56 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b2003b531f2bc9840b9b2b5ca3a04c5c, type: 3}
+  m_Name: Canada_MapDefinition
+  m_EditorClassIdentifier: Assembly-CSharp::MapDefinition
+  mapId: canada
+  displayName: Canada
+  provinces:
+  - provinceId: alberta
+    displayName: Alberta
+    provincePrefab3D: {fileID: 2658926829977534596, guid: 14f87a2862ddb1a46b480210c84bdc5d, type: 3}
+  - provinceId: british_columbia
+    displayName: British Columbia
+    provincePrefab3D: {fileID: 8294735064759693316, guid: a0d4159bc71f5514ea70ef27129f704f, type: 3}
+  - provinceId: manitoba
+    displayName: Manitoba
+    provincePrefab3D: {fileID: 4885772873492994544, guid: 35fb10e3e2a8be944b681973edaf1554, type: 3}
+  - provinceId: new_brunswick
+    displayName: New Brunswick
+    provincePrefab3D: {fileID: 3950889072282555744, guid: b8dc71d1bd55698448f2e72774ee80be, type: 3}
+  - provinceId: newfoundland_and_labrador
+    displayName: Newfoundland And Labrador
+    provincePrefab3D: {fileID: 1468144264817282715, guid: 55fd0a4b9d66be446af1bd7184544712, type: 3}
+  - provinceId: northwest_territories
+    displayName: Northwest Territories
+    provincePrefab3D: {fileID: 8443793877454875568, guid: 4c74fd0ea9c73b84594b779c933a6d5d, type: 3}
+  - provinceId: nova_scotia
+    displayName: Nova Scotia
+    provincePrefab3D: {fileID: 5160306712113874588, guid: ba05a84a1abee064cbaa4bf34ca4317d, type: 3}
+  - provinceId: nunavut
+    displayName: Nunavut
+    provincePrefab3D: {fileID: 6331981474956949053, guid: b0e2780693ac7144da5f8894900e7135, type: 3}
+  - provinceId: ontario
+    displayName: Ontario
+    provincePrefab3D: {fileID: 4421885578237866156, guid: ebd45153dcaaea745be804b987384a15, type: 3}
+  - provinceId: prince_edward_island
+    displayName: Prince Edward Island
+    provincePrefab3D: {fileID: 7374827114568243843, guid: 0bf7f4235ddceb047a35dfef69f51e30, type: 3}
+  - provinceId: quebec
+    displayName: Quebec
+    provincePrefab3D: {fileID: 8106942634841951970, guid: f34e5c7772cc0ed45add74bf8e1f84a6, type: 3}
+  - provinceId: saskatchewan
+    displayName: Saskatchewan
+    provincePrefab3D: {fileID: 968267616251979506, guid: 782ab9c784c2d7c4f8a716e1ba893fb7, type: 3}
+  - provinceId: yukon
+    displayName: Yukon
+    provincePrefab3D: {fileID: 5865979101897171458, guid: c2e1960ee5160134eafaf937c5e5da21, type: 3}
